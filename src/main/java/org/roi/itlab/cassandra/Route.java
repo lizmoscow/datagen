@@ -2,15 +2,10 @@ package org.roi.itlab.cassandra;
 
 public class Route {
     private final Edge[] edges;
-    private final long[] timing;
     private final int size;
 
-    public Route(Edge[] edges, long[] timing) {
-        if (edges.length != timing.length) {
-            throw new IllegalArgumentException("Sizes of the array must be equal!");
-        }
+    public Route(Edge[] edges) {
         this.edges = edges;
-        this.timing = timing;
         this.size = edges.length;
     }
 
@@ -18,9 +13,16 @@ public class Route {
         return edges;
     }
 
-    public long[] getTiming() {
-        return timing;
+    public int getSize() {
+        return size;
     }
 
-    public int getSize( ) { return size; }
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < size; i++) {
+            sb.append(edges[i].toString() + '\n');
+        }
+        return sb.toString();
+    }
 }

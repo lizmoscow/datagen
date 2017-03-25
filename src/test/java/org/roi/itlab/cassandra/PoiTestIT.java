@@ -37,7 +37,7 @@ public class PoiTestIT {
 		datastore.delete(datastore.createQuery(Poi.class));
 	}
 
-	@Test
+//	@Test
 	public void testPoiLoad() throws IOException {
     	long countAll = datastore.createQuery(Poi.class).countAll();
     	Assert.assertEquals(countAll, 0);

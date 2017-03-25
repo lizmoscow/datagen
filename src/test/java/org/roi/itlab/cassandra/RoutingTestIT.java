@@ -5,15 +5,22 @@ import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.nio.charset.Charset;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 
 public class RoutingTestIT {
     private static final String testPois = "./src/test/resources/org/roi/payg/saint-petersburg_russia.csv";
-    private static final int TRIPSCOUNT = 10000;
-    private List<Poi> pois;
+    private static final int ROUTSCOUNT = 1000;
+    private List<Poi> pois, starts, ends;
     private Random rng;
-    private List<Trip> trips = new ArrayList<>();
+    private static final String target = "./target/edges_storage";
 
     @Before
 
@@ -21,39 +28,52 @@ public class RoutingTestIT {
     public void init() throws IOException {
 
         pois = PoiLoader.loadFromCsv(testPois);
+        starts = new ArrayList<>(ROUTSCOUNT);
+        ends = new ArrayList<>(ROUTSCOUNT);
         rng = new Random(42);
 
 
-        //random trips
-        for (int i = 0; i < TRIPSCOUNT ; i++) {
+        for (int i = 0; i < ROUTSCOUNT; i++) {
             int temp = rng.nextInt(30000);
             Poi a = pois.get(temp);
             Poi b = pois.get(temp + rng.nextInt(50));
-            trips.add(new Trip(a, b, 0));
+            starts.add(a);
+            ends.add(b);
         }
     }
 
-    @Test(timeout = 40000)
-    public void testRoutingPerformance() {
-        int routingFailedCounter=0;
-        for (Trip trip :
-                trips) {
+    @Test
+    public void testRoute() {
+        Route route = Routing.route(59.96226, 30.298873, 59.817727, 30.326528);
+        System.out.println(route);
+        Assert.assertEquals(route.getEdges()[0].getDistance(), 5.488, 0.0001);
+    }
+
+    @Test
+    public void emptyRouteTest() {
+        Route route = Routing.route(59.96226, 30.298873, 59.96226, 30.298873);
+        Assert.assertEquals(route.getEdges().length, 0);
+    }
+
+    @Test
+    public void EdgesStorageSavingLoading() throws IOException {
+        Path path = FileSystems.getDefault().getPath(target);
+        Files.deleteIfExists(path);
+        Files.createFile(path);
+        OutputStream out = Files.newOutputStream(path, StandardOpenOption.WRITE);
+        OutputStreamWriter writer = new OutputStreamWriter(out, Charset.defaultCharset());
+        for (int i = 0; i < ROUTSCOUNT; i++) {
+
             try {
-                trip.getRoute();
+                Routing.route(starts.get(i), ends.get(i));
             } catch (IllegalStateException e) {
-                routingFailedCounter++;
+
             }
         }
-
-        System.out.println(routingFailedCounter);
-    }
-    @Test
-    public void testRoute(){
-        Route route = Routing.route(59.96226, 30.298873, 59.817727, 30.326528);
-        for (Edge e :
-                route.getEdges()) {
-            System.out.println(e.getStart()+" "+ e.getEnd()+" "+e.getDistance());
-        }
-        Assert.assertEquals(route.getEdges()[0].getDistance(),5.488,0.0001);
+        Routing.saveEdgesStorage(writer);
+        int size = Routing.getEdgesStorage().size();
+        Routing.loadEdgesStorage(target);
+        int newsize = Routing.getEdgesStorage().size();
+        Assert.assertEquals(size,newsize);
     }
 }
